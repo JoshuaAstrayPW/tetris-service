@@ -7,7 +7,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.util.concurrent.GlobalEventExecutor;
-
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -17,16 +17,22 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 public  class WebSocketHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
     public static ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
+    @Autowired
+    MassegeQueue massegeQueue;
+
+    @Autowired
+    operationHander operationHander;
+
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
                                 TextWebSocketFrame msg) throws Exception { // (1)
         Channel incoming = ctx.channel();
         System.out.println(msg.text());
         for (Channel channel : channels) {
-            if (channel != incoming){
-                channel.writeAndFlush(new TextWebSocketFrame("[" + incoming.remoteAddress() + "]" + msg.text()));
-            } else {
-                channel.writeAndFlush(new TextWebSocketFrame("[you]" + msg.text() ));
+            if (channel == incoming){
+                Response resp = operationHander.handler(msg);
+                channel.writeAndFlush(new TextWebSocketFrame(resp.toString()));
             }
         }
     }
